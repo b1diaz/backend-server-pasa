@@ -13,8 +13,14 @@ var Usuario = require('../models/usuario');
 // =====================================
 // Obtener todos los usuarios
 // =====================================
-app.get('/',(req, res, next)=>{
-    Usuario.find({}, 'nombre email img role',(err, usuarios)=>{
+app.get('/',(req, res)=>{
+
+    var desde = req.query.desde || 0;
+    desde = Number(desde);
+    Usuario.find({}, 'nombre email img role')
+    .skip(desde)
+    .limit(5)
+    .exec(function(err,usuarios){
         if( err ){
             return res.status(500).json({
                 ok: false,
@@ -22,9 +28,19 @@ app.get('/',(req, res, next)=>{
                 erros: err
             });
             }
-            res.status(200).json({
-                ok:true,
-                usuarios
+            Usuario.count({},(err,conteo)=>{
+                if(err){
+                    res.status(500).json({
+                        ok:false,
+                        mensaje: 'Error en el conteo de Usuarios - count',
+                        err
+                    });
+                }
+                res.status(200).json({
+                    ok:true,
+                    usuarios,
+                    conteo
+                });
             });
         
         })
@@ -61,9 +77,7 @@ app.post('/',mdAutenticacion.verificaToken,(req,res)=>{
                 usuario: usuarioGuardado
             });
 
-    });
-
-    
+    });   
     
 });
 
@@ -73,8 +87,9 @@ app.post('/',mdAutenticacion.verificaToken,(req,res)=>{
 
 app.put('/:id',mdAutenticacion.verificaToken,(req, res)=>{
     
-    var id = req.params.id;
     var body = req.body;
+    var id = req.params.id;
+    
 
     Usuario.findById(id, (err, usuario)=>{
         if(err){
@@ -86,7 +101,7 @@ app.put('/:id',mdAutenticacion.verificaToken,(req, res)=>{
         }else if(!usuario){
             return res.status(400).json({
                 ok:false,
-                mensaje: 'No existe el usuario con el id: '+ id,
+                mensaje: 'No existe el usuario con el id: ',
                 error: {message: 'No existe un usuario con este id'}
             });
         }
